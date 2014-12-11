@@ -90,6 +90,20 @@ class PollDataTask extends AsyncTask<Void, Void, String> {
 
 	// NB! Java does not support unsigned types
 	private int unsignedByteToInt(byte b) {
-		return (int) b & 0xFF;
+		
+		//if bit exceedes 127
+		if(getBit(b,7)==1){
+			return 127+((int) b & 0xFF);
+		}else{
+			return (int) b & 0xFF;
+		}
+		
+		
 	}
+	
+	public byte getBit(byte pulseVal, int position){
+		System.out.println("Pulsval: "+pulseVal);
+		return (byte) ((pulseVal >> position) & 1);
+	}
+
 }

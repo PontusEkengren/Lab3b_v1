@@ -32,12 +32,9 @@ public class MainActivity extends Activity {
 			this.finish();
 		}
 		
-		System.out.println(getBit(7));
+		//System.out.println(getBit(7));
 	}
 	
-	public byte getBit(int position){
-		return (byte) ((120 >> position) & 1);
-	}
 
 	@Override
 	protected void onStart() {
