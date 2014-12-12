@@ -25,7 +25,9 @@ class PollDataTask extends AsyncTask<Void, Void, String> {
 		String output = "";
 		//System.out.println("Do in background"); 
 		if(this.isCancelled()){
-			System.out.println("ENDEEDEDE");
+			System.out.println("Cancellelleldededdd");
+			
+			
 		}else{
 			// an ongoing discovery will slow down the connection
 			adapter.cancelDiscovery();
@@ -64,7 +66,7 @@ class PollDataTask extends AsyncTask<Void, Void, String> {
 						value1=value1+127;
 					}
 					
-					output = value1 + "; " + value2 + "\r\n";
+					output = value1 + "," + value2;
 				}
 			} catch (Exception e) {
 				output = "Error1"+e.getMessage();
