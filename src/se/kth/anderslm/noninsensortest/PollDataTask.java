@@ -23,6 +23,7 @@ class PollDataTask extends AsyncTask<Void, Void, String> {
 	@Override
 	protected String doInBackground(Void... v) {
 		String output = "";
+		//System.out.println("Do in background"); 
 		if(this.isCancelled()){
 			System.out.println("ENDEEDEDE");
 		}else{
@@ -31,31 +32,42 @@ class PollDataTask extends AsyncTask<Void, Void, String> {
 
 			BluetoothSocket socket = null;
 			try {
+
+				//System.out.println("Debug0");
 				socket = noninDevice
 						.createRfcommSocketToServiceRecord(STANDARD_SPP_UUID);
-				socket.connect();
 
+				//System.out.println("Debug0.5");
+				socket.connect();
+				
+				
+				//System.out.println("Debug1");
+				
 				InputStream is = socket.getInputStream();
 				OutputStream os = socket.getOutputStream();
 
 				os.write(FORMAT);
 				os.flush();
-				byte[] reply = new byte[1];
+				byte[] reply = new byte[1]; 
 				is.read(reply);
 
+				//System.out.println("Debug2");
 				if (reply[0] == ACK) {
 					byte[] frame = new byte[4]; // this -obsolete- format specifies
 												// 4 bytes per frame
 					
 					is.read(frame);
-					//frame[1]=(byte)130;
+					
 					int value1 = unsignedByteToInt(frame[1]);
 					int value2 = unsignedByteToInt(frame[2]);
-					System.out.println("Plus: "+unsignedByteToInt(frame[1])+"Puls hex: "+frame[1]+" O2 hex: "+frame[2]+" something"+unsignedByteToInt(frame[3])+"something2"+unsignedByteToInt(frame[0]));
+					if(isBitSet(frame[0],0)){
+						value1=value1+127;
+					}
+					
 					output = value1 + "; " + value2 + "\r\n";
 				}
 			} catch (Exception e) {
-				output = e.getMessage();
+				output = "Error1"+e.getMessage();
 			} finally {
 				try {
 					if (socket != null)
@@ -90,20 +102,20 @@ class PollDataTask extends AsyncTask<Void, Void, String> {
 
 	// NB! Java does not support unsigned types
 	private int unsignedByteToInt(byte b) {
+		//b=(byte) 130;
+		System.out.println("Byte values: " +Integer.toBinaryString((int) b));
+		System.out.println("Byte ints " +b);
 		
-		//if bit exceedes 127
-		if(getBit(b,7)==1){
-			return 127+((int) b & 0xFF);
-		}else{
-			return (int) b & 0xFF;
-		}
-		
+		return (int) b & 0xFF;
 		
 	}
 	
 	public byte getBit(byte pulseVal, int position){
-		System.out.println("Pulsval: "+pulseVal);
 		return (byte) ((pulseVal >> position) & 1);
+	}
+	
+	public boolean isBitSet(byte pulseVal, int pos){
+		return (pulseVal & (1 << pos)) != 0;
 	}
 
 }
