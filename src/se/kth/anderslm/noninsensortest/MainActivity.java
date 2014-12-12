@@ -3,6 +3,8 @@ package se.kth.anderslm.noninsensortest;
 import java.io.BufferedInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -10,6 +12,7 @@ import java.io.InputStream;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.OptionalDataException;
+import java.io.OutputStream;
 import java.net.Socket;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
@@ -39,10 +42,12 @@ public class MainActivity extends Activity {
 	protected ObjectOutputStream out;
 	protected ObjectInputStream in;
 	protected String message;
-	protected ArrayList<String> file;
+	protected ArrayList<String> file = new ArrayList<String>();
 	protected File noninValues;
 	protected BufferedInputStream get;
 	protected FileOutputStream fs;
+	protected FileInputStream fis;
+	protected OutputStream os;
 	
 	protected String filename = "NONIN_DATA.txt";
 	@Override
@@ -87,6 +92,7 @@ public class MainActivity extends Activity {
 			
 			
 		   //old connectionposition
+			noninValues = new File(this.getFilesDir(),"noninValues.txt");
 			receiveconnection rc = new receiveconnection();
 			rc.execute("");
 			
@@ -112,6 +118,7 @@ public class MainActivity extends Activity {
 	private void save(String data){
 		try {
 			FileWriter fileWriter = new FileWriter(noninValues);
+			fileWriter.write(data);
 			fileWriter.close();
 		}catch(Exception e){
 			e.printStackTrace();
@@ -237,15 +244,34 @@ public class MainActivity extends Activity {
 				save(appender);
 				System.out.println("Local save complete!");
 				
-				try{
-					int u;
-					byte buf[] = new byte[1024];
-					while((u = get.read(buf,0,1024))!=-1){
-						fs.write(buf,0,u);
+				//Send the file via socket
+				
+				
+				try {
+					byte[] fileByteLength = new byte[(int) noninValues.length()];
+					fis = new FileInputStream(noninValues);
+					get = new BufferedInputStream(fis);
+					get.read(fileByteLength,0,fileByteLength.length);
+					os = requestSocket.getOutputStream();
+		            System.out.println("Sending file ("+fileByteLength.length+") bytes");
+		            os.write(fileByteLength,0,fileByteLength.length);
+		            os.flush();
+		            System.out.println("Done sending");
+				} catch (FileNotFoundException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				} catch (IOException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}finally{
+					try {
+						if(get!=null) get.close();
+						if(os != null) os.close();
+						if(requestSocket != null) requestSocket.close();
+					} catch (IOException e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
 					}
-					
-				}catch(Exception e){
-					System.out.println("Opala"+e);
 				}
 			    
 			return null;
