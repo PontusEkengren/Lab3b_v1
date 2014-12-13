@@ -20,6 +20,8 @@ import java.util.Set;
 
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Message;
 import android.app.Activity;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
@@ -36,7 +38,6 @@ public class MainActivity extends Activity {
 
 	public static final int REQUEST_ENABLE_BT = 42;
 	protected boolean isStopped=false;
-	protected PollDataTask getData=null;
 	//Connect values
 	protected Socket requestSocket;
 	protected ObjectOutputStream out;
@@ -48,6 +49,8 @@ public class MainActivity extends Activity {
 	protected FileOutputStream fs;
 	protected FileInputStream fis;
 	protected OutputStream os;
+	private PollDataThread getDataFromThread = null;
+	private Thread thread=null;
 	
 	protected String filename = "NONIN_DATA.txt";
 	@Override
@@ -57,7 +60,7 @@ public class MainActivity extends Activity {
 
 		dataView = (TextView) findViewById(R.id.dataView);
 		file = new ArrayList<String>();
-		noninValues = new File(this.getFilesDir(),filename);
+		//noninValues = new File(this.getFilesDir(),filename);
 
 		bluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
 		if (bluetoothAdapter == null) {
@@ -65,7 +68,7 @@ public class MainActivity extends Activity {
 			this.finish();
 		}
 		
-		//System.out.println(getBit(7));
+		
 	}
 	
 
@@ -88,9 +91,9 @@ public class MainActivity extends Activity {
 		
 		if(isStopped){
 			isStopped = false;
-			getData.cancel(true);
-			
-			
+			if(thread!=null){
+				thread.interrupt();
+			}
 		   //old connectionposition
 			noninValues = new File(this.getFilesDir(),"noninValues.txt");
 			receiveconnection rc = new receiveconnection();
@@ -107,8 +110,37 @@ public class MainActivity extends Activity {
 	public void launchTask(){
 
 		if (noninDevice != null) {
-			getData =new PollDataTask(this, noninDevice);
-			getData.execute();
+			Handler handler = new Handler(){
+				@Override
+				public void handleMessage(Message msg) {			  
+					Bundle bundle = msg.getData();
+					String string = bundle.getString("keyValue");
+					dataView.setText(string);
+					
+					//System.out.println("Data: "+"'"+((String) data).split(",")[0]+"'");
+					int pulseVal=-1;
+					int oxyVal=0;
+					try{
+						pulseVal = Integer.parseInt(((String) string).split(",")[0]);
+						oxyVal = Integer.parseInt(((String) string).split(",")[1]);
+					}catch(Exception e){
+						System.out.println("Error Parse: "+e);
+						System.out.println("Skipped add to file");
+					}
+					
+					if((pulseVal<=250 &&pulseVal>0)&&(oxyVal<=100&&oxyVal>=0)){
+						file.add((String) string);
+						//System.out.println("Added to file");
+					}
+					
+					dataView.setText(string);
+					
+				}
+			};
+			
+			getDataFromThread = new PollDataThread(this, noninDevice,handler);
+			thread = new Thread(getDataFromThread.runnable);
+			thread.start();
 		} else {
 			showToast("No Nonin sensor found");
 		}
@@ -123,30 +155,6 @@ public class MainActivity extends Activity {
 		}catch(Exception e){
 			e.printStackTrace();
 		}
-	}
-
-	protected void displayData(CharSequence data) {
-		
-		System.out.println("Data: "+"'"+(String) data+"'");
-		
-		//System.out.println("Data: "+"'"+((String) data).split(",")[0]+"'");
-		int pulseVal=-1;
-		int oxyVal=0;
-		try{
-			pulseVal = Integer.parseInt(((String) data).split(",")[0]);
-			oxyVal = Integer.parseInt(((String) data).split(",")[1]);
-		}catch(Exception e){
-			System.out.println("Error Parse: "+e);
-			System.out.println("Skipped add to file");
-		}
-		
-		if((250>pulseVal&&pulseVal>0)&&(100>oxyVal&&oxyVal>=0)){
-			file.add((String) data);
-			//System.out.println("Added to file");
-		}
-		
-		dataView.setText(data);
-		launchTask();
 	}
 
 	private void initBluetooth() {
