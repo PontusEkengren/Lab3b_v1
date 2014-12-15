@@ -15,6 +15,7 @@ import java.io.OptionalDataException;
 import java.io.OutputStream;
 import java.net.Socket;
 import java.net.UnknownHostException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Set;
 
@@ -51,6 +52,7 @@ public class MainActivity extends Activity {
 	protected OutputStream os;
 	private PollDataThread getDataFromThread = null;
 	private Thread thread=null;
+	private Handler handler = null;
 	
 	protected String filename = "NONIN_DATA.txt";
 	@Override
@@ -67,6 +69,41 @@ public class MainActivity extends Activity {
 			showToast("This device do not support Bluetooth");
 			this.finish();
 		}
+		
+		handler = new Handler(){
+			@Override
+			public void handleMessage(Message msg) {			  
+				Bundle bundle = msg.getData();
+				String string = bundle.getString("keyValue");
+				//dataView.setText(string);
+				
+				//System.out.println("Data: "+"'"+((String) data).split(",")[0]+"'");
+				String date = "";
+				int pulseVal=-1;
+				int oxyVal=0;
+				try{
+					date = (String)string.split(",")[0];
+					pulseVal = Integer.parseInt(((String) string).split(",")[1]);
+					oxyVal = Integer.parseInt(((String) string).split(",")[2]);
+				}catch(Exception e){
+					System.out.println("Error Parse: "+e);
+					System.out.println("Skipped add to file");
+				}
+				
+				if((pulseVal<=250 &&pulseVal>0)&&(oxyVal<=100&&oxyVal>=0)){
+					file.add((String) string);
+					file.add("\n");
+					//System.out.println("Added to file");
+				}
+				if(date.equalsIgnoreCase("error1")){
+					dataView.setText("Does not sense your pulse");
+				}else{
+					dataView.setText("Time: "+date+"\n\n Pulse: "+pulseVal+"\n\n O2: "+oxyVal);
+				}
+				
+				
+			}
+		};
 		
 		
 	}
@@ -110,33 +147,7 @@ public class MainActivity extends Activity {
 	public void launchTask(){
 
 		if (noninDevice != null) {
-			Handler handler = new Handler(){
-				@Override
-				public void handleMessage(Message msg) {			  
-					Bundle bundle = msg.getData();
-					String string = bundle.getString("keyValue");
-					dataView.setText(string);
-					
-					//System.out.println("Data: "+"'"+((String) data).split(",")[0]+"'");
-					int pulseVal=-1;
-					int oxyVal=0;
-					try{
-						pulseVal = Integer.parseInt(((String) string).split(",")[0]);
-						oxyVal = Integer.parseInt(((String) string).split(",")[1]);
-					}catch(Exception e){
-						System.out.println("Error Parse: "+e);
-						System.out.println("Skipped add to file");
-					}
-					
-					if((pulseVal<=250 &&pulseVal>0)&&(oxyVal<=100&&oxyVal>=0)){
-						file.add((String) string);
-						//System.out.println("Added to file");
-					}
-					
-					dataView.setText(string);
-					
-				}
-			};
+			
 			
 			getDataFromThread = new PollDataThread(this, noninDevice,handler);
 			thread = new Thread(getDataFromThread.runnable);
@@ -231,7 +242,7 @@ public class MainActivity extends Activity {
 			    	System.out.println("Trying to connect...");
 			    	//Connect initiate
 			    	//Log.d("Lab3b", "Trying to connect...");
-				    requestSocket = new Socket("193.10.39.200", 6668);
+				    requestSocket = new Socket("193.10.39.200", 6667);
 				   // Log.d("Lab3b", "Connected");
 		            
 		            
@@ -246,7 +257,7 @@ public class MainActivity extends Activity {
 				String appender ="";
 				for (String tempArray: file) {
 					System.out.println("Debuger tempArray: "+tempArray);
-					appender+=(tempArray+"/n");
+					appender+=(tempArray);
 				}
 				System.out.println("saving locally...");
 				save(appender);

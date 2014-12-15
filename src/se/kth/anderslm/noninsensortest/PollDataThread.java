@@ -2,6 +2,9 @@ package se.kth.anderslm.noninsensortest;
 
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.text.SimpleDateFormat;
+import java.util.Calendar;
+import java.util.Date;
 import java.util.UUID;
 
 import android.app.Activity;
@@ -11,6 +14,7 @@ import android.bluetooth.BluetoothSocket;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
+import android.text.format.DateFormat;
 
 public class PollDataThread extends Activity{
 
@@ -18,6 +22,7 @@ public class PollDataThread extends Activity{
 	private BluetoothDevice noninDevice;
 	private BluetoothAdapter adapter;
 	private Handler handler;
+	private int calendar;
 	// The byte sequence to set sensor to a basic, and obsolete, format
 	private static final byte[] FORMAT = { 0x02,0x70,0x04,0x02,0x08,0x00,(byte)0x7E,0x03 };
 	private static final byte ACK = 0x06; // ACK from Nonin sensor
@@ -32,9 +37,12 @@ public class PollDataThread extends Activity{
 	
     Runnable runnable = new Runnable() {
         public void run() {
-        	while(true){
+        	
+        	while(!Thread.interrupted()){
+        		System.out.println("Thread inter: "+Thread.interrupted());
         		displayData(pollData());
         	}
+        	System.out.println("Thread intrreuptedpedpepdepdpedpepdepdp!!!!!!!!!!!!!!!!");
         	
         }
     };
@@ -78,10 +86,13 @@ public class PollDataThread extends Activity{
 					value1=value1+127;
 				}
 				
-				output = value1 + "," + value2;
+				SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
+				Date date = new Date();
+				
+				output = dateFormat.format(date)+","+value1 + "," + value2;
 			}
 		} catch (Exception e) {
-			output = "Error1"+e.getMessage();
+			output = "Error1,"+e.getMessage();
 		} finally {
 			try {
 				if (socket != null)
