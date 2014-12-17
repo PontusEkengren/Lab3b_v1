@@ -38,11 +38,20 @@ public class PollDataThread extends Activity{
     Runnable runnable = new Runnable() {
         public void run() {
         	
-        	while(!Thread.interrupted()){
-        		System.out.println("Thread inter: "+Thread.interrupted());
-        		displayData(pollData());
+        	while(true){
+        		if(Thread.interrupted()){
+        			
+        			System.out.println("Thread intrreuptedpedpepdepdpedpepdepdp!!!!!!!!!!!!!!!!");
+        			System.out.println("Thread inter IF: "+Thread.interrupted());
+            		return;
+        		}else{
+        			System.out.println("Thread inter ELSE: "+Thread.interrupted());
+            		displayData(pollData());
+        		}
+        		
+        		
         	}
-        	System.out.println("Thread intrreuptedpedpepdepdpedpepdepdp!!!!!!!!!!!!!!!!");
+        	
         	
         }
     };
@@ -83,7 +92,7 @@ public class PollDataThread extends Activity{
 				int value1 = unsignedByteToInt(frame[1]);
 				int value2 = unsignedByteToInt(frame[2]);
 				if(isBitSet(frame[0],0)){
-					value1=value1+127;
+					value1=value1+128;
 				}
 				
 				SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");

@@ -90,7 +90,7 @@ public class MainActivity extends Activity {
 					System.out.println("Skipped add to file");
 				}
 				
-				if((pulseVal<=250 &&pulseVal>0)&&(oxyVal<=100&&oxyVal>=0)){
+				if((pulseVal<=250 &&pulseVal>0)&&(oxyVal<=100&&oxyVal>0)){
 					file.add((String) string);
 					file.add("\n");
 					//System.out.println("Added to file");
@@ -128,13 +128,24 @@ public class MainActivity extends Activity {
 		
 		if(isStopped){
 			isStopped = false;
-			if(thread!=null){
-				thread.interrupt();
+			
+			System.out.println("Thread interrupted start!!!!!!!!!!!!!!");
+			thread.interrupt();
+			try {
+				thread.join();
+			} catch (InterruptedException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
 			}
+			thread=null;
+			System.out.println("Thread interrupted stopped!!!!!!!!!!!!!!");
+			getDataFromThread=null;
+			
 		   //old connectionposition
 			noninValues = new File(this.getFilesDir(),"noninValues.txt");
 			receiveconnection rc = new receiveconnection();
 			rc.execute("");
+			System.out.println("Return status async: "+rc.getStatus());
 			
         }else{
 			isStopped=true;
@@ -148,9 +159,12 @@ public class MainActivity extends Activity {
 
 		if (noninDevice != null) {
 			
+			if(thread==null){
+				System.out.println("New thread starteeeeeeeeed!!!!!!!!!!!!!!!!!!!!!!!");
+				getDataFromThread = new PollDataThread(this, noninDevice,handler);
+				thread = new Thread(getDataFromThread.runnable);
+			}
 			
-			getDataFromThread = new PollDataThread(this, noninDevice,handler);
-			thread = new Thread(getDataFromThread.runnable);
 			thread.start();
 		} else {
 			showToast("No Nonin sensor found");
@@ -231,23 +245,22 @@ public class MainActivity extends Activity {
 		return true;
 	}
 	
-	
-
-	
 	private class receiveconnection extends AsyncTask<String, Void, Void>{
 
+		private boolean toastError = false;
+		
 		@Override
 		protected Void doInBackground(String... urls) {
 			 try{
 			    	System.out.println("Trying to connect...");
 			    	//Connect initiate
 			    	//Log.d("Lab3b", "Trying to connect...");
-				    requestSocket = new Socket("193.10.39.200", 6667);
+				    requestSocket = new Socket("193.10.39.166", 6667);
 				   // Log.d("Lab3b", "Connected");
 		            
 		            
 		            get = new BufferedInputStream(requestSocket.getInputStream());
-		            System.out.println("Connected to localhost in port 6668");
+		            System.out.println("Connected to localhost in port 6667");
 		            fs = new FileOutputStream(noninValues);
 			    }catch(Exception e){
 			    	e.printStackTrace();
@@ -265,7 +278,6 @@ public class MainActivity extends Activity {
 				
 				//Send the file via socket
 				
-				
 				try {
 					byte[] fileByteLength = new byte[(int) noninValues.length()];
 					fis = new FileInputStream(noninValues);
@@ -276,12 +288,9 @@ public class MainActivity extends Activity {
 		            os.write(fileByteLength,0,fileByteLength.length);
 		            os.flush();
 		            System.out.println("Done sending");
-				} catch (FileNotFoundException e) {
+				} catch (Exception e) {
 					// TODO Auto-generated catch block
-					e.printStackTrace();
-				} catch (IOException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
+					toastError = true;
 				}finally{
 					try {
 						if(get!=null) get.close();
@@ -300,9 +309,14 @@ public class MainActivity extends Activity {
 		@Override
 		protected void onPostExecute(Void v) {
 			try {
-				fs.flush();
+				if(fs !=null){
+					fs.flush();
+					fs.close();
+				}
+				if(toastError){
+					Toast.makeText(getApplicationContext(), "Server not available", Toast.LENGTH_SHORT).show();
+				}
 				
-				fs.close();
 			} catch (IOException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
